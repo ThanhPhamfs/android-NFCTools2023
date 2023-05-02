@@ -11,16 +11,20 @@ import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.nfctools2023.receivers.NFCTagReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.lang.Byte
 import kotlin.experimental.and
+import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
     /** NFC ADAPTER */
@@ -34,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var tvContent: TextView? = null
     private var tvLanguageCode: TextView? = null
     private var customProgressDialog: Dialog? = null
-
+    private lateinit var nFCTagReceiver: NFCTagReceiver
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -61,19 +65,29 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         mNfcAdapter?.let {
             setupForegroundDispatch(this, it)
+            /** Register nfc tag receiver **/
+            nFCTagReceiver = NFCTagReceiver()
+            val nFCTagFilter = IntentFilter()
+            nFCTagFilter.addAction(NfcAdapter.ACTION_NDEF_DISCOVERED)
+
+//            registerReceiver(nFCTagReceiver, nFCTagFilter)
+            ContextCompat.registerReceiver(baseContext, nFCTagReceiver, nFCTagFilter!!, ContextCompat.RECEIVER_NOT_EXPORTED)
         }
     }
 
     override fun onPause() {
-        mNfcAdapter?.let { stopForegroundDispatch(this, it) };
+        mNfcAdapter?.let { stopForegroundDispatch(this, it)
+            unregisterReceiver(nFCTagReceiver)
+
+        };
         super.onPause()
     }
 
-    override fun onNewIntent(intent: Intent?) {
-        Log.d(TAG, "onNewIntent")
-        super.onNewIntent(intent)
-        intent?.let { handleIntent(it) }
-    }
+//    override fun onNewIntent(intent: Intent?) {
+//        Log.d(TAG, "onNewIntent")
+//        super.onNewIntent(intent)
+//        intent?.let { handleIntent(it) }
+//    }
 
     /**
      * Handle Intent object
